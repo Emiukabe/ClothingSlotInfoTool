@@ -1,3 +1,3 @@
-A tool to figure out the .app and mesh extension for a specific clothes slot for a mod or to make NPVs
+A tool to figure out the .app and mesh extension and also its AddToInventory item code for a specific clothing slot
 
 Cyber Engine Tweaks is required to use

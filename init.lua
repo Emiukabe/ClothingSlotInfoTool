@@ -129,9 +129,8 @@ registerForEvent("onDraw", function()
             end
             ImGui.Text("")
 
-            ImGui.InputText('MeshApp', MeshApp, 100)
-            ImGui.InputText('ItemCommand', IID, 100)
-
+            ImGui.InputText('MeshApp', MeshApp, 100,ImGuiInputTextFlags.ReadOnly)
+            ImGui.InputText('ItemCommand', IID, 100,ImGuiInputTextFlags.ReadOnly)
 
             ImGui.Text("")
 

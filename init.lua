@@ -37,35 +37,37 @@ end
 function printapp()
     local file = io.open("appnames.txt", "w")
     if file then
-        for key,value in pairs(clothingitems) do
-          file:write(key)
-          file:write(itemvalue(value))
-          file:write("\n")
+        for key, value in pairs(clothingitems) do
+            file:write(key)
+            file:write(itemvalue(value))
+            file:write("\n")
         end
         file:flush();
-      else
+    else
         print("Error opening file!")
-      end
-      file:close()
+    end
+    file:close()
 end
-
 
 function printitemval()
     local file = io.open("values.txt", "w")
     if file then
-        for key,value in pairs(clothingitems) do
-          file:write(key)
-          file:write("\n")
-          file:write(itemcommand(value))
-          file:write("\n")
+        for key, value in pairs(clothingitems) do
+            file:write(key)
+            file:write("\n")
+            file:write(itemcommand(value))
+            file:write("\n")
         end
         file:flush();
-      else
+    else
         print("Error opening file!")
-      end
-      file:close()
+    end
+    file:close()
 end
 
+function conveqex()
+
+end
 
 registerForEvent("onDraw", function()
     if (drawWindow) then
@@ -129,8 +131,8 @@ registerForEvent("onDraw", function()
             end
             ImGui.Text("")
 
-            ImGui.InputText('MeshApp', MeshApp, 100,ImGuiInputTextFlags.ReadOnly)
-            ImGui.InputText('ItemCommand', IID, 100,ImGuiInputTextFlags.ReadOnly)
+            ImGui.InputText('MeshApp', MeshApp, 100, ImGuiInputTextFlags.ReadOnly)
+            ImGui.InputText('ItemCommand', IID, 100, ImGuiInputTextFlags.ReadOnly)
 
             ImGui.Text("")
 
@@ -138,20 +140,35 @@ registerForEvent("onDraw", function()
 
             if ImGui.Button('Slot mesh app', 175, 35) then
                 printapp()
-                end
+            end
+        end
+
+        ImGui.SameLine()
+
+        if ImGui.Button('Slot Item name', 175, 35) then
+            printitemval()
+        end
+
+        if ImGui.Button('Export Both', 360, 35) then
+            printapp()
+            printitemval()
+        end
+        
+        if ModArchiveExists("EquipmentEx.archive") then
+            ImGui.Separator()
+            ImGui.Text('EquipmentEx Commands')
+
+            if ImGui.Button('Get Current Outfit Item names', 360, 35) then
+                EquipmentEx.PrintItems()
             end
 
-            ImGui.SameLine()
-
-            if ImGui.Button('Slot Item name', 175, 35) then
-                printitemval()
+            if ImGui.Button('Get Current Outfit item codes', 360, 35) then
+                EquipmentEx.ExportItems()
             end
+            ImGui.Text('Check Console or Game Log for EquipmentEx Codes')
+            ImGui.Text('Hint: clearing output can make it easier to copy the codes')
 
-            if ImGui.Button('Export Both', 360, 35) then
-                printapp()
-                printitemval()
-            end
-
-            ImGui.End()
-        end   
+        end
+        ImGui.End()
+    end
 end)

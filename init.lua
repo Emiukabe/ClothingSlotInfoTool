@@ -6,7 +6,6 @@ end)
 registerForEvent("onOverlayClose", function()
     drawWindow = false
 end)
-
 function getitem(equip)
     local equipexist = Game.GetScriptableSystemsContainer():Get("EquipmentSystem"):GetActiveItem(GetPlayer(), equip)
     if equipexist.id.hash ~= 0 then
@@ -15,6 +14,11 @@ function getitem(equip)
         return 0
     end
 end
+
+local EqExprntstuffsettings = {
+    itemdisp = false,
+    printasgameinv = false
+}
 
 function itemvalue(equip)
     if (getitem(equip) ~= 0) then
@@ -25,15 +29,15 @@ function itemvalue(equip)
 end
 
 function itemcommand(equip)
-    local printinv1 = "Game.AddToInventory(\""
-    local printinv2 = "\", 1)"
+    printinv1 = "Game.AddToInventory(\""
+    printinv2 = "\", 1)"
     if (getitem(equip) ~= 0) then
         return (printinv1 .. getitem(equip).id.value .. printinv2)
     else
         return "Slot is empty!"
     end
 end
-
+local alert = ""
 function printapp()
     local file = io.open("appnames.txt", "w")
     if file then
@@ -47,6 +51,7 @@ function printapp()
         print("Error opening file!")
     end
     file:close()
+    print("Mesh app names printed in appnames.txt in the folder of this tool!")
 end
 
 function printitemval()
@@ -63,11 +68,79 @@ function printitemval()
         print("Error opening file!")
     end
     file:close()
+    print("Item values printed in values.txt in the folder of this tool!")
 end
 
-function conveqex()
 
+function EqExMain()
+    local slots = TweakDBInterface.GetCharacterRecord(GetPlayer():GetRecordID()):AttachmentSlots()
+    local itemarr = {}
+    local nooutfit = ""
+    for k, item in pairs(slots) do
+        -- local slotName = GetLocalizedTextByKey(StringToName(TweakDBInterface.GetAttachmentSlotRecord(item:GetID()):LocalizedName()))
+        local slotName = TweakDBInterface.GetAttachmentSlotRecord(item:GetID())
+        local slottest = GetLocalizedTextByKey(StringToName(slotName:LocalizedName()))
+        local ItemName = Game.GetTransactionSystem():GetItemInSlot(GetPlayer(), item:GetID())
+        if (ItemName ~= nil and slottest ~= nil and slottest ~= "") then
+            nooutfit = nooutfit .. TDBID.ToStringDEBUG(TweakDBInterface.GetAttachmentSlotRecord(item:GetID()):GetID())
+            local itemobj = { slotName, ItemName }
+            table.insert(itemarr, itemobj)
+            -- table.insert(itemarr,item)
+        end
+        
+    end
+    alert = ""
+    if(nooutfit == "") then
+       alert ="You're not using an outfit, use to utilize the buttons below"
+    end
+    return itemarr
 end
+
+function eqexiteminfo()
+    local slots = EqExMain()
+    local usedslotnames = ""
+    local ItemDispName = ""
+    for k, item in pairs(slots) do
+        -- local slotName = GetLocalizedTextByKey(StringToName(TweakDBInterface.GetAttachmentSlotRecord(item:GetID()):LocalizedName()))
+        -- local ItemName = Game.GetTransactionSystem():GetItemInSlot(GetPlayer(),item:GetID())
+        local slotName    = GetLocalizedTextByKey(StringToName(item[1]:LocalizedName()))
+        local ItemName    = item[2]
+        -- local itTest = slots[k].itemobj.ItemName
+        local ItemInvName = ItemID.GetTDBID(ItemName.GetItemID(ItemName))
+        if (EqExprntstuffsettings.itemdisp) then
+            ItemDispName = '\nItem Name:' ..
+            GetLocalizedTextByKey(TweakDBInterface.GetItemRecord(ItemInvName):DisplayName())
+        end
+        local ItemMeshName = TweakDBInterface.GetItemRecord(ItemInvName):AppearanceName()
+        usedslotnames = usedslotnames ..
+        slotName ..
+        ItemDispName .. '\n' .. NameToString(ItemMeshName) .. '\n-------------------------------------------------\n'
+    end
+
+    return usedslotnames
+end
+
+function eqexitemcodes()
+    local slots = EqExMain()
+    local command = ""
+    for k, item in pairs(slots) do
+        local slotName = TDBID.ToStringDEBUG(item[1]:GetID())
+        local ItemName = item[2]
+        local ItemInvName = ItemID.GetTDBID(ItemName.GetItemID(ItemName))
+
+        if (EqExprntstuffsettings.printasgameinv) then
+            command = command .. "Game.AddToInventory(\"" .. TDBID.ToStringDEBUG(ItemInvName) .. "\", 1) "
+        else
+            command = command ..
+            "EquipmentEx.EquipItem(\"" .. TDBID.ToStringDEBUG(ItemInvName) .. "\", \"" .. slotName .. "\") "
+        end
+    end
+    return command
+end
+
+local MeshApp = "Empty.. for now"
+local IID = "Game.AddToInventory(\"Items.Q005_Johnny_Glasses" .. ", 1)"
+local EqExIID = ""
 
 registerForEvent("onDraw", function()
     if (drawWindow) then
@@ -131,8 +204,8 @@ registerForEvent("onDraw", function()
             end
             ImGui.Text("")
 
-            ImGui.InputText('MeshApp', MeshApp, 100, ImGuiInputTextFlags.ReadOnly)
-            ImGui.InputText('ItemCommand', IID, 100, ImGuiInputTextFlags.ReadOnly)
+            MeshApp = ImGui.InputText('MeshApp', MeshApp, 100, ImGuiInputTextFlags.ReadOnly)
+            IID = ImGui.InputText('ItemCommand', IID, 100, ImGuiInputTextFlags.ReadOnly)
 
             ImGui.Text("")
 
@@ -153,22 +226,72 @@ registerForEvent("onDraw", function()
             printapp()
             printitemval()
         end
-        
-        if ModArchiveExists("EquipmentEx.archive") then
-            ImGui.Separator()
-            ImGui.Text('EquipmentEx Commands')
 
-            if ImGui.Button('Get Current Outfit Item names', 360, 35) then
-                EquipmentEx.PrintItems()
-            end
-
-            if ImGui.Button('Get Current Outfit item codes', 360, 35) then
-                EquipmentEx.ExportItems()
-            end
-            ImGui.Text('Check Console or Game Log for EquipmentEx Codes')
-            ImGui.Text('Hint: clearing output can make it easier to copy the codes')
-
+        if not ModArchiveExists("EquipmentEx.archive") then
+            ImGui.Text("EquipmentEx is not detected, the buttons below may not output anything")
         end
+            ImGui.Separator()
+            ImGui.Text('EquipmentEx commands for currently-worn outfit:')
+            ImGui.Text("Include:")
+
+
+            ImGui.Text(alert)
+            if ImGui.Button('Print item app names to console', 360, 35) then
+                local prnt = eqexiteminfo()
+                print(prnt)
+                FTLog(prnt)
+            end
+            if (ImGui.IsItemHovered()) then
+                ImGui.SetTooltip(
+                "This will print the used slot and its active item's app name\nExample: Legs\\Outer:l1_pants_03_q001_start_")
+            end
+
+            ImGui.SameLine()
+
+            local itemDispValue, itemDispPressed = ImGui.Checkbox("Include Item Inventory Name",
+                EqExprntstuffsettings.itemdisp)
+            if itemDispPressed then
+                EqExprntstuffsettings.itemdisp = itemDispValue
+            end
+            if (ImGui.IsItemHovered()) then
+                ImGui.SetTooltip("Include the name of items when outputing them to console\nExample: V's Pants")
+            end
+
+
+            if ImGui.Button('Print item command codes in Console', 360, 35) then
+                local prnt = eqexitemcodes()
+                print(prnt)
+                FTLog(prnt)
+            end
+            ImGui.SameLine()
+            local prntasinvValue, prntasinvPressed = ImGui.Checkbox("Output as AddToInventory instead",
+                EqExprntstuffsettings.printasgameinv)
+            if prntasinvPressed then
+                EqExprntstuffsettings.printasgameinv = prntasinvValue
+            end
+            if (ImGui.IsItemHovered()) then
+                ImGui.SetTooltip("Output as AddToInventory instead of EquipmentEx.EqiupItems")
+            end
+            if ImGui.Button('Save item and mesh app info to File ', 360, 35) then
+                local file = io.open("EqEx_CurrentOutfitInfo.txt", "w")
+                if file then
+                        file:write(eqexiteminfo())
+                        file:write("\n")
+                        file:write(eqexitemcodes())
+                        file:write("\n")                    
+                    file:flush();
+                else
+                    print("Error opening file!")
+                end
+                file:close()
+                print("Item values printed in EqEx_CurrentOutfitInfo.txt in the CET folder of this tool!")
+            end
+            if (ImGui.IsItemHovered()) then
+                ImGui.SetTooltip("Item code output style depend on the above checkboxes")
+            end
+
+            ImGui.Text('Check Console or Game Log for EquipmentEx Codes')
+        end
+    
         ImGui.End()
-    end
 end)
